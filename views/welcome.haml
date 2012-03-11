@@ -1,0 +1,10 @@
+%html
+  %head
+    %title SoundCloud.com: Dashboard Podcast
+  %body
+    %h1 SoundCloud.com: Dashboard Podcast
+    %ul
+      %li
+        %a{:href => to('/activities/%s.xml' % @id_md5)} tracks
+      %li
+        %a{:href => to('/activities/favorites/%s.xml' % @id_md5)} favorites
