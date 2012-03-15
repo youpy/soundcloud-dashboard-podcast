@@ -3,8 +3,15 @@
     %title SoundCloud.com: Dashboard Podcast
   %body
     %h1 SoundCloud.com: Dashboard Podcast
+    %h2 Tracks
     %ul
       %li
-        %a{:href => to('/activities/%s.xml' % @id_md5)} tracks
+        %a{:href => to(@tracks_path)} Feed
       %li
-        %a{:href => to('/activities/favorites/%s.xml' % @id_md5)} favorites
+        %a{:href => to_itpc(@tracks_path)} Add to iTunes
+    %h2 Faborites
+    %ul
+      %li
+        %a{:href => to(@favorites_path)} Feed
+      %li
+        %a{:href => to_itpc(@favorites_path)} Add to iTunes

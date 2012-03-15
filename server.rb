@@ -28,7 +28,8 @@ get '/welcome' do
 
   SoundCloud::User.create!(:id_md5 => id_md5, :access_token_key => access_token_key, :access_token_secret => access_token_secret)
 
-  @id_md5 = id_md5
+  @tracks_path = '/activities/%s.xml' % id_md5
+  @favorites_path = '/activities/favorites/%s.xml' % id_md5
 
   haml :welcome
 end
@@ -117,5 +118,11 @@ get '/activities/favorites/:id.xml' do |id_md5|
         end
       end
     end
+  end
+end
+
+helpers do
+  def to_itpc(*args)
+    to(*args).sub(/^https?/, 'itpc')
   end
 end
