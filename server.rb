@@ -67,7 +67,7 @@ get '/activities/:id.xml' do |id_md5|
                 xml.description origin['description']
                 xml.link origin['permalink_url']
                 xml.guid origin['permalink_url']
-                xml.enclosure :url => 'http://youpy.no.de/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
+                xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
                 xml.author origin['user']['username']
                 xml.itunes :author, origin['user']['username']
                 xml.itunes :summary, origin['description']
@@ -109,7 +109,7 @@ get '/activities/favorites/:id.xml' do |id_md5|
                 xml.description origin['title']
                 xml.link origin['permalink_url']
                 xml.guid origin['permalink_url']
-                xml.enclosure :url => 'http://youpy.no.de/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
+                xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
                 xml.author username
                 xml.itunes :author, username
               end
