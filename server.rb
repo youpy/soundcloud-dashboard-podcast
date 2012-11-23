@@ -3,6 +3,7 @@ require './soundcloud_user'
 
 require 'digest/md5'
 require 'cgi'
+require 'builder'
 
 include OAuthHelper
 
@@ -70,7 +71,12 @@ get '/activities/:id.xml' do |id_md5|
                 xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
                 xml.author origin['user']['username']
                 xml.itunes :author, origin['user']['username']
+                xml.itunes :subtitle, origin['permalink_url']
                 xml.itunes :summary, origin['description']
+
+                if origin['artwork_url']
+                  xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
+                end
               end
             end
           end
@@ -112,6 +118,12 @@ get '/activities/favorites/:id.xml' do |id_md5|
                 xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
                 xml.author username
                 xml.itunes :author, username
+                xml.itunes :subtitle, origin['permalink_url']
+                xml.itunes :summary, origin['description']
+
+                if origin['artwork_url']
+                  xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
+                end
               end
             end
           end
