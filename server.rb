@@ -119,7 +119,7 @@ get '/activities/favorites/:id.xml' do |id_md5|
                 xml.author username
                 xml.itunes :author, username
                 xml.itunes :subtitle, origin['permalink_url']
-                xml.itunes :summary, origin['description']
+                xml.itunes :summary, (origin['description'] || '') + "\nfavored by " + activity['origin']['user']['username']
 
                 if origin['artwork_url']
                   xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
