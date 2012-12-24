@@ -10,6 +10,7 @@ GEM
     bson (1.4.0)
     bson_ext (1.4.0)
     builder (3.0.0)
+    dalli (2.6.0)
     haml (3.1.2)
     i18n (0.6.0)
     json (1.5.3)
@@ -33,6 +34,7 @@ PLATFORMS
 
 DEPENDENCIES
   bson_ext
+  dalli
   haml
   json
   mongoid

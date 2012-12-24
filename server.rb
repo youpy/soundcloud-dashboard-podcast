@@ -11,6 +11,12 @@ set :oauth_consumer_key, ENV['XC_OAUTH_CONSUMER_KEY']
 set :oauth_consumer_secret, ENV['XC_OAUTH_CONSUMER_SECRET']
 set :oauth_site, 'http://api.soundcloud.com'
 set :oauth_redirect_to, '/welcome'
+set :cache, Dalli::Client.new(
+  ENV['MEMCACHE_SERVERS'],
+  :username => ENV['MEMCACHE_USERNAME'],
+  :password => ENV['MEMCACHE_PASSWORD'],
+  :expires_in => 7.day
+)
 
 get '/' do
   haml :index
@@ -61,7 +67,7 @@ get '/activities/:id.xml' do |id_md5|
             end
 
             if enclosure_url
-              enclosure_url += '?consumer_key=hE1HLJfuvbBHU3fX2S56w'
+              enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
 
               xml.item do
                 xml.title origin['title']
@@ -105,10 +111,10 @@ get '/activities/favorites/:id.xml' do |id_md5|
             origin = activity['origin']['track']
             enclosure_url = origin['stream_url']
             format = 'mp3'
-            username = origin['permalink_url'].match(/http:\/\/soundcloud\.com\/([^\/]+)/)[1]
+            username = username(access_token, origin['user_uri'])
 
             if enclosure_url
-              enclosure_url += '?consumer_key=hE1HLJfuvbBHU3fX2S56w'
+              enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
 
               xml.item do
                 xml.title origin['title']
@@ -136,5 +142,14 @@ end
 helpers do
   def to_itpc(*args)
     to(*args).sub(/^https?/, 'itpc')
+  end
+
+  def username(access_token, user_url)
+    unless username = settings.cache.get(user_url)
+      username = JSON.parse(access_token.get(user_url + '.json').body)['username']
+      settings.cache.set(user_url, username)
+    end
+
+    username
   end
 end
