@@ -124,8 +124,8 @@ get '/activities/favorites/:id.xml' do |id_md5|
                 xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
                 xml.author username
                 xml.itunes :author, username
-                xml.itunes :subtitle, origin['permalink_url']
-                xml.itunes :summary, (origin['description'] || '') + "\nfavored by " + activity['origin']['user']['username']
+                xml.itunes :subtitle, origin['permalink_url'] + " favored by " + activity['origin']['user']['username']
+                xml.itunes :summary, origin['description']
 
                 if origin['artwork_url']
                   xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
