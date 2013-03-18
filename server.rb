@@ -18,6 +18,41 @@ set :cache, Dalli::Client.new(
   :expires_in => 7.day
 )
 
+def build_xml(title, path)
+  builder do |xml|
+    xml.instruct! :xml, :version => '1.0'
+    xml.rss :version => "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
+      xml.channel do
+        xml.title title
+        xml.description title
+        xml.link url(path)
+
+        yield xml
+      end
+    end
+  end
+end
+
+def build_item(xml, item, enclosure_url, format)
+  enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
+
+  xml.item do
+    xml.title item['title']
+    xml.description item['description']
+    xml.link item['permalink_url']
+    xml.guid item['permalink_url']
+    xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
+    xml.author item['user']['username']
+    xml.itunes :author, item['user']['username']
+    xml.itunes :subtitle, item['permalink_url']
+    xml.itunes :summary, item['description']
+
+    if item['artwork_url']
+      xml.itunes :image, :href => item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'itemal')
+    end
+  end
+end
+
 get '/' do
   haml :index
 end
@@ -37,6 +72,7 @@ get '/welcome' do
 
   @tracks_path = '/activities/%s.xml' % id_md5
   @favorites_path = '/activities/favorites/%s.xml' % id_md5
+  @my_favorites_path = '/activities/my_favorites/%s.xml' % id_md5
 
   haml :welcome
 end
@@ -47,45 +83,50 @@ get '/activities/:id.xml' do |id_md5|
   data = JSON.parse(access_token.get('https://api.soundcloud.com/me/activities/tracks/affiliated.json').body)
   me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
 
-  builder do |xml|
-    xml.instruct! :xml, :version => '1.0'
-    xml.rss :version => "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
-      xml.channel do
-        xml.title "SoundCloud.com: Dashboard Podcast for %s" % me['username']
-        xml.description "SoundCloud.com: Dashboard Podcast for %s" % me['username']
-        xml.link url('/activities/%s.xml' % id_md5)
+  build_xml(
+    'SoundCloud.com: Dashboard for %s' % me['username'],
+    '/activities/%s.xml' % id_md5) do |xml|
+    data['collection'].each do |activity|
+      if activity['type'] == 'track'
+        origin = activity['origin']
 
-        data['collection'].each do |activity|
-          if activity['type'] == 'track'
-            origin = activity['origin']
-            if origin['downloadable'] && origin['download_url']
-              enclosure_url = origin['download_url']
-              format = origin['original_format']
-            else
-              enclosure_url = origin['stream_url']
-              format = 'mp3'
-            end
+        if origin['downloadable'] && origin['download_url']
+          enclosure_url = origin['download_url']
+          format = origin['original_format']
+        else
+          enclosure_url = origin['stream_url']
+          format = 'mp3'
+        end
 
-            if enclosure_url
-              enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
+        if enclosure_url
+          build_item(xml, origin, enclosure_url, format)
+        end
+      end
+    end
+  end
+end
 
-              xml.item do
-                xml.title origin['title']
-                xml.description origin['description']
-                xml.link origin['permalink_url']
-                xml.guid origin['permalink_url']
-                xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
-                xml.author origin['user']['username']
-                xml.itunes :author, origin['user']['username']
-                xml.itunes :subtitle, origin['permalink_url']
-                xml.itunes :summary, origin['description']
+get '/activities/my_favorites/:id.xml' do |id_md5|
+  user = SoundCloud::User.where(:id_md5 => id_md5).first
+  access_token = OAuth::AccessToken.new(oauth_consumer, user.access_token_key, user.access_token_secret)
+  data = JSON.parse(access_token.get('https://api.soundcloud.com/me/favorites.json').body)
+  me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
 
-                if origin['artwork_url']
-                  xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
-                end
-              end
-            end
-          end
+  build_xml(
+    'SoundCloud.com: My Favorites for %s' % me['username'],
+    '/activities/%s.xml' % id_md5) do |xml|
+    data.each do |track|
+      if track['kind'] == 'track'
+        if track['downloadable'] && track['download_url']
+          enclosure_url = track['download_url']
+          format = track['original_format']
+        else
+          enclosure_url = track['stream_url']
+          format = 'mp3'
+        end
+
+        if enclosure_url
+          build_item(xml, track, enclosure_url, format)
         end
       end
     end
@@ -102,8 +143,8 @@ get '/activities/favorites/:id.xml' do |id_md5|
     xml.instruct! :xml, :version => '1.0'
     xml.rss :version => "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
       xml.channel do
-        xml.title "SoundCloud.com: Dashboard Favorite Podcast for %s" % me['username']
-        xml.description "SoundCloud.com: Dashboard Favorite Podcast for %s" % me['username']
+        xml.title "SoundCloud.com: Dashboard Favorites for %s" % me['username']
+        xml.description "SoundCloud.com: Dashboard Favorites for %s" % me['username']
         xml.link url('/activities/favorites/%s.xml' % id_md5)
 
         data['collection'].each do |activity|
