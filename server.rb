@@ -43,7 +43,7 @@ def build_item(xml, item, enclosure_url, format, updated_at = nil, username = ni
     xml.guid item['permalink_url']
 
     if updated_at
-      xml.updated updated_at.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+      xml.pubDate updated_at.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     end
 
     xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
