@@ -33,7 +33,7 @@ def build_xml(title, path)
   end
 end
 
-def build_item(xml, item, enclosure_url, format)
+def build_item(xml, item, enclosure_url, format, updated_at = nil, username = nil)
   enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
 
   xml.item do
@@ -41,14 +41,19 @@ def build_item(xml, item, enclosure_url, format)
     xml.description item['description']
     xml.link item['permalink_url']
     xml.guid item['permalink_url']
+
+    if updated_at
+      xml.updated updated_at.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    end
+
     xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
-    xml.author item['user']['username']
-    xml.itunes :author, item['user']['username']
+    xml.author username || item['user']['username']
+    xml.itunes :author, username || item['user']['username']
     xml.itunes :subtitle, item['permalink_url']
     xml.itunes :summary, item['description']
 
     if item['artwork_url']
-      xml.itunes :image, :href => item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'itemal')
+      xml.itunes :image, :href => item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original')
     end
   end
 end
@@ -99,7 +104,7 @@ get '/activities/:id.xml' do |id_md5|
         end
 
         if enclosure_url
-          build_item(xml, origin, enclosure_url, format)
+          build_item(xml, origin, enclosure_url, format, Time.parse(activity['created_at']))
         end
       end
     end
@@ -114,7 +119,7 @@ get '/activities/my_favorites/:id.xml' do |id_md5|
 
   build_xml(
     'SoundCloud.com: My Favorites for %s' % me['username'],
-    '/activities/%s.xml' % id_md5) do |xml|
+    '/my_favorites/%s.xml' % id_md5) do |xml|
     data.each do |track|
       if track['kind'] == 'track'
         if track['downloadable'] && track['download_url']
@@ -139,41 +144,18 @@ get '/activities/favorites/:id.xml' do |id_md5|
   data = JSON.parse(access_token.get('https://api.soundcloud.com/me/activities/all.json').body)
   me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
 
-  builder do |xml|
-    xml.instruct! :xml, :version => '1.0'
-    xml.rss :version => "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
-      xml.channel do
-        xml.title "SoundCloud.com: Dashboard Favorites for %s" % me['username']
-        xml.description "SoundCloud.com: Dashboard Favorites for %s" % me['username']
-        xml.link url('/activities/favorites/%s.xml' % id_md5)
+  build_xml(
+    'SoundCloud.com: Dashboard Favorites for %s' % me['username'],
+    '/activities/favorites/%s.xml' % id_md5) do |xml|
+    data['collection'].each do |activity|
+      if activity['type'] == 'favoriting'
+        origin = activity['origin']['track']
+        enclosure_url = origin['stream_url']
+        format = 'mp3'
+        username = username(access_token, origin['user_uri'])
 
-        data['collection'].each do |activity|
-          if activity['type'] == 'favoriting'
-            origin = activity['origin']['track']
-            enclosure_url = origin['stream_url']
-            format = 'mp3'
-            username = username(access_token, origin['user_uri'])
-
-            if enclosure_url
-              enclosure_url += '?consumer_key=' + settings.oauth_consumer_key
-
-              xml.item do
-                xml.title origin['title']
-                xml.description origin['title']
-                xml.link origin['permalink_url']
-                xml.guid origin['permalink_url']
-                xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
-                xml.author username
-                xml.itunes :author, username
-                xml.itunes :subtitle, origin['permalink_url'] + " faved by " + activity['origin']['user']['username']
-                xml.itunes :summary, origin['description']
-
-                if origin['artwork_url']
-                  xml.itunes :image, :href => origin['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original');
-                end
-              end
-            end
-          end
+        if enclosure_url
+          build_item(xml, origin, enclosure_url, format, Time.parse(activity['created_at']), username)
         end
       end
     end
