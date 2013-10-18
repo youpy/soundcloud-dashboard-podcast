@@ -12,9 +12,9 @@ set :oauth_consumer_secret, ENV['XC_OAUTH_CONSUMER_SECRET']
 set :oauth_site, 'http://api.soundcloud.com'
 set :oauth_redirect_to, '/welcome'
 set :cache, Dalli::Client.new(
-  ENV['MEMCACHE_SERVERS'],
-  :username => ENV['MEMCACHE_USERNAME'],
-  :password => ENV['MEMCACHE_PASSWORD'],
+  ENV['MEMCACHIER_SERVERS'],
+  :username => ENV['MEMCACHIER_USERNAME'],
+  :password => ENV['MEMCACHIER_PASSWORD'],
   :expires_in => 7.day
 )
 

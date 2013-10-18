@@ -6,6 +6,7 @@ gem "json"
 gem "mongoid"
 gem "bson_ext"
 gem "dalli"
+gem "memcachier"
 
 group :test do
   gem 'rspec'
