@@ -131,7 +131,7 @@ get '/activities/my_favorites/:id.xml' do |id_md5|
         end
 
         if enclosure_url
-          build_item(xml, track, enclosure_url, format)
+          build_item(xml, track, enclosure_url, format, Time.parse(track['created_at']))
         end
       end
     end
