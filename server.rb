@@ -51,11 +51,20 @@ def build_item(xml, item, enclosure_url, format, updated_at = nil, username = ni
     xml.itunes :author, username || item['user']['username']
     xml.itunes :subtitle, item['permalink_url']
     xml.itunes :summary, item['description']
+    xml.itunes :duration, duration_to_str(item['duration'])
 
     if item['artwork_url']
       xml.itunes :image, :href => item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original')
     end
   end
+end
+
+def duration_to_str(duration)
+  [60, 60, 24].inject([duration / 1000, []]) do |(dur, digits), n|
+    digit = (dur % n).to_s
+    digits << (digit.size < 2 ? '0' + digit : digit)
+    [dur / n, digits]
+  end[1].reverse.join(':')
 end
 
 get '/' do
