@@ -9,7 +9,7 @@ include OAuthHelper
 
 set :oauth_consumer_key, ENV['XC_OAUTH_CONSUMER_KEY']
 set :oauth_consumer_secret, ENV['XC_OAUTH_CONSUMER_SECRET']
-set :oauth_site, 'http://api.soundcloud.com'
+set :oauth_site, 'https://api.soundcloud.com'
 set :oauth_redirect_to, '/welcome'
 set :cache, Dalli::Client.new(
   ENV['MEMCACHIER_SERVERS'],
