@@ -13,15 +13,15 @@ set :oauth_site, 'https://api.soundcloud.com'
 set :oauth_redirect_to, '/welcome'
 set :cache, Dalli::Client.new(
   ENV['MEMCACHIER_SERVERS'],
-  :username => ENV['MEMCACHIER_USERNAME'],
-  :password => ENV['MEMCACHIER_PASSWORD'],
-  :expires_in => 7.day
+  username: ENV['MEMCACHIER_USERNAME'],
+  password: ENV['MEMCACHIER_PASSWORD'],
+  expires_in: 7.day
 )
 
 def build_xml(title, path)
   builder do |xml|
-    xml.instruct! :xml, :version => '1.0'
-    xml.rss :version => "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
+    xml.instruct! :xml, version: '1.0'
+    xml.rss version: "2.0", 'xmlns:itunes' => 'http://www.itunes.com/dtds/podcast-1.0.dtd' do
       xml.channel do
         xml.title title
         xml.description title
@@ -46,7 +46,7 @@ def build_item(xml, item, enclosure_url, format, updated_at = nil, username = ni
       xml.pubDate updated_at.utc.rfc822
     end
 
-    xml.enclosure :url => 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
+    xml.enclosure url: 'http://youpy.jit.su/soundcloud/download.%s?download_url=%s' % [format, CGI.escape(enclosure_url.sub(/^https/, 'http'))]
     xml.author username || item['user']['username']
     xml.itunes :author, username || item['user']['username']
     xml.itunes :subtitle, item['permalink_url']
@@ -54,7 +54,7 @@ def build_item(xml, item, enclosure_url, format, updated_at = nil, username = ni
     xml.itunes :duration, duration_to_str(item['duration'])
 
     if item['artwork_url']
-      xml.itunes :image, :href => item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original')
+      xml.itunes :image, href: item['artwork_url'].sub(/\?\w+$/, '').sub(/large/, 'original')
     end
   end
 end
@@ -72,17 +72,14 @@ get '/' do
 end
 
 get '/welcome' do
-  access_token_key = session[:access_token_key]
-  access_token_secret = session[:access_token_secret]
-  access_token = OAuth::AccessToken.new(oauth_consumer, access_token_key, access_token_secret)
-  data = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
+  data = JSON.parse(access_token.get('/me.json').body)
   id_md5 = Digest::MD5.hexdigest(data['id'].to_s + ENV['XC_ID_SECRET'])
 
-  SoundCloud::User.where(:id_md5 => id_md5).each do |user|
+  SoundCloud::User.where(id_md5: id_md5).each do |user|
     user.destroy
   end
 
-  SoundCloud::User.create!(:id_md5 => id_md5, :access_token_key => access_token_key, :access_token_secret => access_token_secret)
+  SoundCloud::User.create!(id_md5: id_md5, access_token: session[:access_token])
 
   @tracks_path = '/activities/%s.xml' % id_md5
   @favorites_path = '/activities/favorites/%s.xml' % id_md5
@@ -92,10 +89,9 @@ get '/welcome' do
 end
 
 get '/activities/:id.xml' do |id_md5|
-  user = SoundCloud::User.where(:id_md5 => id_md5).first
-  access_token = OAuth::AccessToken.new(oauth_consumer, user.access_token_key, user.access_token_secret)
-  data = JSON.parse(access_token.get('https://api.soundcloud.com/me/activities/tracks/affiliated.json').body)
-  me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
+  user = SoundCloud::User.where(id_md5: id_md5).first
+  data = JSON.parse(access_token.get('/me/activities/tracks/affiliated.json').body)
+  me = JSON.parse(access_token.get('/me.json').body)
 
   build_xml(
     'SoundCloud.com: Dashboard for %s' % me['username'],
@@ -121,10 +117,9 @@ get '/activities/:id.xml' do |id_md5|
 end
 
 get '/activities/my_favorites/:id.xml' do |id_md5|
-  user = SoundCloud::User.where(:id_md5 => id_md5).first
-  access_token = OAuth::AccessToken.new(oauth_consumer, user.access_token_key, user.access_token_secret)
-  data = JSON.parse(access_token.get('https://api.soundcloud.com/me/favorites.json').body)
-  me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
+  user = SoundCloud::User.where(id_md5: id_md5).first
+  data = JSON.parse(access_token.get('/me/favorites.json').body)
+  me = JSON.parse(access_token.get('/me.json').body)
 
   build_xml(
     'SoundCloud.com: My Favorites for %s' % me['username'],
@@ -148,10 +143,9 @@ get '/activities/my_favorites/:id.xml' do |id_md5|
 end
 
 get '/activities/favorites/:id.xml' do |id_md5|
-  user = SoundCloud::User.where(:id_md5 => id_md5).first
-  access_token = OAuth::AccessToken.new(oauth_consumer, user.access_token_key, user.access_token_secret)
-  data = JSON.parse(access_token.get('https://api.soundcloud.com/me/activities/all.json').body)
-  me = JSON.parse(access_token.get('https://api.soundcloud.com/me.json').body)
+  user = SoundCloud::User.where(id_md5: id_md5).first
+  data = JSON.parse(access_token.get('/me/activities/all.json').body)
+  me = JSON.parse(access_token.get('/me.json').body)
 
   build_xml(
     'SoundCloud.com: Dashboard Favorites for %s' % me['username'],
@@ -183,5 +177,13 @@ helpers do
     end
 
     username
+  end
+
+  def access_token
+    OAuth2::AccessToken.new(
+      client,
+      session[:access_token],
+      header_format: header_format
+    )
   end
 end

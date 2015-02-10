@@ -2,32 +2,37 @@ module OAuthHelper
   enable :sessions
 
   get '/oauth/auth' do
-    consumer = OAuth::Consumer.new(
-      settings.oauth_consumer_key,
-      settings.oauth_consumer_secret,
-      {
-        :site => settings.oauth_site,
-      })
-
-    request_token = consumer.get_request_token(:oauth_callback => url('/oauth/cb'))
-    session[:request_token] = request_token
-    redirect request_token.authorize_url
+    redirect client.auth_code.authorize_url(redirect_uri: url('/oauth/cb'))
   end
 
   get '/oauth/cb' do
-    access_token = session[:request_token].get_access_token(:oauth_verifier => params[:oauth_verifier])
-    session[:access_token_key] = access_token.token
-    session[:access_token_secret] = access_token.secret
-    session.delete(:request_token)
+    access_token = client.auth_code.get_token(
+      params[:code],
+      {
+        redirect_uri: url('/oauth/cb')
+      },
+      {
+        header_format: header_format
+      }
+    )
+    token = access_token.token
+    session[:access_token] = token
+
     redirect to(settings.oauth_redirect_to)
   end
 
-  def oauth_consumer
-    OAuth::Consumer.new(
+  def header_format
+    'OAuth %s'
+  end
+
+  def client
+    client = OAuth2::Client.new(
       settings.oauth_consumer_key,
       settings.oauth_consumer_secret,
       {
-        :site => settings.oauth_site,
+        site: settings.oauth_site,
+        authorize_url: 'https://soundcloud.com/connect',
+        token_url: 'https://api.soundcloud.com/oauth2/token'
       })
   end
 end

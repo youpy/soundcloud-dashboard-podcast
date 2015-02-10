@@ -14,23 +14,25 @@ describe 'App' do
     before do
       SoundCloud::User.
         should_receive(:where).
-        with(:id_md5 => 'xxxxx').
-        and_return([mock(Object, :access_token_key => 'foo', :access_token_secret => 'bar')])
+        with(id_md5: 'xxxxx').
+        and_return([mock(Object, access_token: 'foo')])
 
-      OAuth::AccessToken.should_receive(:new).
-        with(any_args, 'foo', 'bar').
+      OAuth2::AccessToken.should_receive(:new).
+        with(any_args, 'foo', header_format: 'OAuth %s').
+        at_least(1).
+        times.
         and_return(@access_token = mock(Object))
 
       @access_token.should_receive(:get).
-        with('https://api.soundcloud.com/me.json').
-        and_return(mock(Object, :body => read_fixture('me.json')))
+        with('/me.json').
+        and_return(mock(Object, body: read_fixture('me.json')))
     end
 
     describe '/activities/:id.xml' do
       before do
         @access_token.should_receive(:get).
-          with('https://api.soundcloud.com/me/activities/tracks/affiliated.json').
-          and_return(mock(Object, :body => read_fixture('affiliated.json')))
+          with('/me/activities/tracks/affiliated.json').
+          and_return(mock(Object, body: read_fixture('affiliated.json')))
       end
 
       it 'returns a feed for activities' do
@@ -71,7 +73,7 @@ describe 'App' do
     describe '/activities/favorites/:id.xml' do
       before do
         @access_token.should_receive(:get).
-          with('https://api.soundcloud.com/me/activities/all.json').
+          with('/me/activities/all.json').
           and_return(mock(Object, :body => read_fixture('all.json')))
       end
 
@@ -87,8 +89,8 @@ describe 'App' do
     describe '/activities/my_favorites/:id.xml' do
       before do
         @access_token.should_receive(:get).
-          with('https://api.soundcloud.com/me/favorites.json').
-          and_return(mock(Object, :body => read_fixture('favorites.json')))
+          with('/me/favorites.json').
+          and_return(mock(Object, body: read_fixture('favorites.json')))
       end
 
       it 'returns a feed for activities' do

@@ -12,8 +12,7 @@ module SoundCloud
     include Mongoid::Document
     include Mongoid::Timestamps
 
-    field :id_md5, :type => String
-    field :access_token_key, :type => String
-    field :access_token_secret, :type => String
+    field :id_md5, type: String
+    field :access_token, type: String
   end
 end

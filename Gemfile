@@ -1,7 +1,7 @@
 source :rubygems
 gem "sinatra"
 gem "haml"
-gem "oauth"
+gem "oauth2"
 gem "json"
 gem "mongoid"
 gem "bson_ext"
