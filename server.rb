@@ -182,12 +182,4 @@ helpers do
 
     username
   end
-
-  def access_token(token)
-    OAuth2::AccessToken.new(
-      client,
-      token,
-      header_format: header_format
-    )
-  end
 end

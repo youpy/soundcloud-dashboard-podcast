@@ -25,6 +25,14 @@ module OAuthHelper
     'OAuth %s'
   end
 
+  def access_token(token)
+    OAuth2::AccessToken.new(
+      client,
+      token,
+      header_format: header_format
+    )
+  end
+
   def client
     client = OAuth2::Client.new(
       settings.oauth_consumer_key,
