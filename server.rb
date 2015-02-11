@@ -189,7 +189,7 @@ get '/user_tracks/:id.xml' do |user_id|
   tracks = http.get('/users/%i/tracks.json' % user_id).body
 
   build_xml(
-    'SoundCloud.com: Tracks ' % username,
+    'SoundCloud.com: Tracks: %s' % username,
     '/user_tracks/%i.xml' % user_id) do |xml|
     tracks.each do |track|
       if track['downloadable'] && track['download_url']
