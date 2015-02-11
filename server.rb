@@ -86,6 +86,7 @@ get '/welcome' do
   @tracks_path = '/activities/%s.xml' % id_md5
   @favorites_path = '/activities/favorites/%s.xml' % id_md5
   @my_favorites_path = '/activities/my_favorites/%s.xml' % id_md5
+  @user_tracks_path = '/user_tracks?name=youpy'
 
   haml :welcome
 end
