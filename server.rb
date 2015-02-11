@@ -72,6 +72,7 @@ get '/' do
 end
 
 get '/welcome' do
+  access_token = access_token(session[:access_token])
   data = JSON.parse(access_token.get('/me.json').body)
   id_md5 = Digest::MD5.hexdigest(data['id'].to_s + ENV['XC_ID_SECRET'])
 
@@ -90,6 +91,7 @@ end
 
 get '/activities/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/activities/tracks/affiliated.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
 
@@ -118,6 +120,7 @@ end
 
 get '/activities/my_favorites/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/favorites.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
 
@@ -144,6 +147,7 @@ end
 
 get '/activities/favorites/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/activities/all.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
 
@@ -179,10 +183,10 @@ helpers do
     username
   end
 
-  def access_token
+  def access_token(token)
     OAuth2::AccessToken.new(
       client,
-      session[:access_token],
+      token,
       header_format: header_format
     )
   end
