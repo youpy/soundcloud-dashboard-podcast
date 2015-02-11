@@ -7,6 +7,7 @@ gem "mongoid"
 gem "bson_ext"
 gem "dalli"
 gem "memcachier"
+gem "faraday_middleware"
 
 group :test do
   gem 'rspec'

@@ -1,5 +1,6 @@
 require './oauth_helper'
 require './soundcloud_user'
+require './soundcloud_api_request'
 
 require 'digest/md5'
 require 'cgi'
@@ -169,6 +170,43 @@ get '/activities/favorites/:id.xml' do |id_md5|
   end
 end
 
+get '/user_tracks' do
+  name = params[:name]
+  location = http.get(
+    '/resolve.json',
+    {
+      url: 'http://soundcloud.com/' + name,
+    }
+  ).body['location']
+  id = http.get(location).body['id']
+
+  redirect url('/user_tracks/%i.xml' % id)
+end
+
+get '/user_tracks/:id.xml' do |user_id|
+  response = http.get('/users/%i.json' % user_id)
+  username = response.body['username']
+  tracks = http.get('/users/%i/tracks.json' % user_id).body
+
+  build_xml(
+    'SoundCloud.com: Tracks ' % username,
+    '/user_tracks/%i.xml' % user_id) do |xml|
+    tracks.each do |track|
+      if track['downloadable'] && track['download_url']
+        enclosure_url = track['download_url']
+        format = track['original_format']
+      else
+        enclosure_url = track['stream_url']
+        format = 'mp3'
+      end
+
+      if enclosure_url
+        build_item(xml, track, enclosure_url, format, Time.parse(track['created_at']))
+      end
+    end
+  end
+end
+
 helpers do
   def to_itpc(*args)
     to(*args).sub(/^https?/, 'itpc')
@@ -181,5 +219,14 @@ helpers do
     end
 
     username
+  end
+
+  def http
+    Faraday.new(url: settings.oauth_site) do |faraday|
+      faraday.use FaradayMiddleware::SoundCloudApiRequest, :client_id => settings.oauth_consumer_key
+      # faraday.response :logger
+      faraday.adapter Faraday.default_adapter
+      faraday.use FaradayMiddleware::ParseJson
+    end
   end
 end
