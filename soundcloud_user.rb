@@ -14,5 +14,6 @@ module SoundCloud
 
     field :id_md5, type: String
     field :access_token, type: String
+    field :refresh_token, type: String
   end
 end

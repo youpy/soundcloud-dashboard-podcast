@@ -81,7 +81,11 @@ get '/welcome' do
     user.destroy
   end
 
-  SoundCloud::User.create!(id_md5: id_md5, access_token: session[:access_token])
+  SoundCloud::User.create!(
+    id_md5: id_md5,
+    access_token: session[:access_token],
+    refresh_token: session[:refresh_token]
+  )
 
   @tracks_path = '/activities/%s.xml' % id_md5
   @favorites_path = '/activities/favorites/%s.xml' % id_md5
@@ -92,6 +96,7 @@ end
 
 get '/activities/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  refresh_token!(user)
   access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/activities/tracks/affiliated.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
@@ -121,6 +126,7 @@ end
 
 get '/activities/my_favorites/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  refresh_token!(user)
   access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/favorites.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
@@ -148,6 +154,7 @@ end
 
 get '/activities/favorites/:id.xml' do |id_md5|
   user = SoundCloud::User.where(id_md5: id_md5).first
+  refresh_token!(user)
   access_token = access_token(user.access_token)
   data = JSON.parse(access_token.get('/me/activities/all.json').body)
   me = JSON.parse(access_token.get('/me.json').body)
@@ -219,6 +226,13 @@ helpers do
     end
 
     username
+  end
+
+  def refresh_token!(user)
+    access_token = refresh_token(user.access_token, user.refresh_token)
+    user.access_token = access_token.token
+    user.refresh_token = access_token.refresh_token
+    user.save
   end
 
   def http

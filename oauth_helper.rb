@@ -15,14 +15,23 @@ module OAuthHelper
         header_format: header_format
       }
     )
-    token = access_token.token
-    session[:access_token] = token
+    session[:access_token] = access_token.token
+    session[:refresh_token] = access_token.refresh_token
 
     redirect to(settings.oauth_redirect_to)
   end
 
   def header_format
     'OAuth %s'
+  end
+
+  def refresh_token(token, refresh_token)
+    OAuth2::AccessToken.new(
+      client,
+      token,
+      header_format: header_format,
+      refresh_token: refresh_token
+    ).refresh!
   end
 
   def access_token(token)
